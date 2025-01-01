@@ -1,0 +1,101 @@
+// ==UserScript==
+// @name         Add Print PDF Button to ednevnik.edu.mk
+// @namespace    https://ednevnik.edu.mk/
+// @version      1.6
+// @description  Adds a "Print PDF" button to ednevnik.edu.mk that downloads a PDF of the main content with custom margins and page breaks
+// @match        https://ednevnik.edu.mk/*
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    // Wait for the page to fully load
+    window.addEventListener('load', function() {
+        // Create a new button element
+        var printButton = document.createElement('button');
+        printButton.innerHTML = 'Printoje Listën Evidentuese';
+        printButton.id = 'print-pdf-button';
+
+        // Style the button (optional)
+        printButton.style.position = 'fixed';
+        printButton.style.bottom = '10px'; // Position it 10px from the bottom
+        printButton.style.right = '10px';  // Position it 10px from the right
+        printButton.style.padding = '10px 20px';
+        printButton.style.backgroundColor = '#B45F04';
+        printButton.style.color = '#fff';
+        printButton.style.border = 'none';
+        printButton.style.borderRadius = '5px';
+        printButton.style.cursor = 'pointer';
+        printButton.style.zIndex = '1000';
+
+        // Append the button to the body
+        document.body.appendChild(printButton);
+
+        // Add click event listener
+        printButton.addEventListener('click', function() {
+            // Select the element whose id starts with 'main-'
+            var mainElement = document.querySelector('[id^="main-"]');
+            if (mainElement) {
+                // Dynamically load html2pdf.js library
+                loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js', function() {
+                    generatePDF(mainElement);
+                });
+            } else {
+                alert('Printimi nuk është i mundur nga kjo faqe! Ju lutem vizitoni listat evidentuese. ');
+            }
+        });
+
+        // Function to dynamically load a script
+        function loadScript(url, callback){
+            var script = document.createElement('script');
+            script.type = 'text/javascript';
+            if (script.readyState){  // IE
+                script.onreadystatechange = function(){
+                    if (script.readyState === 'loaded' || script.readyState === 'complete'){
+                        script.onreadystatechange = null;
+                        callback();
+                    }
+                };
+            } else {  // Others
+                script.onload = function(){
+                    callback();
+                };
+            }
+            script.src = url;
+            document.getElementsByTagName('head')[0].appendChild(script);
+        }
+
+        // Function to generate PDF using html2pdf.js
+        function generatePDF(element) {
+            // Add top margin to the first sub-div
+            var subDivs = element.getElementsByTagName('div');
+            if (subDivs.length > 0) {
+                var firstSubDiv = subDivs[0];
+
+                // Add top margin
+                firstSubDiv.style.marginTop = '15%'; // Adjust the value as needed
+
+                // Apply CSS styles to enforce a page break after the first sub-div
+                firstSubDiv.style.pageBreakAfter = 'always'; // For older browsers
+                firstSubDiv.style.breakAfter = 'page';       // For modern browsers
+
+                // Optional: Add a class for clarity
+                firstSubDiv.classList.add('page-break-after');
+            }
+
+            // Set your custom options
+            var opt = {
+                margin:       [0.1, 0, 0.1, 0.1],
+                filename:     'ednevnik.pdf',
+                image:        { type: 'jpeg', quality: 1 },
+                html2canvas:  { scale: 2 },
+                jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Generate and save the PDF
+            html2pdf().from(element).set(opt).save();
+        }
+
+    });
+})();
